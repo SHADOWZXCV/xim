@@ -47,5 +47,6 @@ int killConsole();
 int writeWindowsBuffer(CHAR_INFO *buffer, COORD where, COORD size);
 int rerenderScreen();
 int setCursorPosition(Vector2d start, int next);
+KeyCode pollInputFromConsole();
 
 #endif

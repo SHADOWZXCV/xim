@@ -16,6 +16,11 @@ enum XIM_BUFFER_TYPES {
     EDITOR_BUFFER
 };
 
+enum SIGNALS {
+    EXIT_SIGNAL = 0,
+    NOP_SIGNAL = 1,
+};
+
 typedef struct {
     CHAR_INFO *cells;
 
@@ -35,6 +40,7 @@ struct {
     short command_started;
     Buffer editorBuffer;
     Buffer commandBuffer;
+    enum SIGNALS signal;
 } Xim;
 
 int initVirtualBuffer();

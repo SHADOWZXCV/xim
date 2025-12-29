@@ -2,6 +2,7 @@
 
 int initVirtualBuffer(Console console) {
     Xim.mode = COMMAND_MODE;
+    Xim.signal = NOP_SIGNAL;
 
     Xim.editorBuffer.size.width = console.state.Size.width;
     Xim.commandBuffer.size.width = console.state.Size.width;
@@ -130,4 +131,28 @@ int renderVirtualBuffer() {
     }
 
     return 0;
+}
+
+
+int initializeXim() {
+    KeyCode key;
+
+    while(Xim.signal != EXIT_SIGNAL) {
+        key = pollInputFromConsole();
+
+        if (key.character) {
+            addToCurrentBuffer((char) key.character);
+
+            if (key.character == 'I') {
+                // enable insert mode if it wasn't, otherwise just type the character to the screen
+            }
+        } else {
+            //! TODO: Tightly coupled to windows bruh.
+            if (key.keyCode == VK_ESCAPE) {
+                // enable command mode if it wasn't already
+            }
+        }
+
+        renderVirtualBuffer();
+    }
 }

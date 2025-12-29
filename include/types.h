@@ -6,4 +6,9 @@ typedef struct {
     int y;
 } Vector2d;
 
+typedef struct {
+  unsigned short keyCode;
+  unsigned short character;  
+} KeyCode;
+
 #endif

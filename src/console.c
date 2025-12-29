@@ -124,3 +124,27 @@ int setCursorPosition(Vector2d start, int next) {
 
     return SetConsoleCursorPosition(console.windowsConsoleHandle, position);
 }
+
+KeyCode pollInputFromConsole() {
+    INPUT_RECORD record;
+
+    // read keystrokes
+    ReadConsoleInput(console.hInput, &record, 1, &console.state.Input.lastReadCharsCount);
+
+    if (record.EventType == WINDOW_BUFFER_SIZE_EVENT) {
+        rerenderScreen(record.Event.WindowBufferSizeEvent.dwSize);
+    }
+
+     if (record.EventType == KEY_EVENT && record.Event.KeyEvent.bKeyDown) {
+        console.state.Input.lastKeyCode = record.Event.KeyEvent.wVirtualKeyCode;
+        console.state.Input.character = record.Event.KeyEvent.uChar.AsciiChar;
+
+        return (KeyCode) {
+            .keyCode = record.Event.KeyEvent.wVirtualKeyCode,
+            .character = record.Event.KeyEvent.uChar.AsciiChar
+        };
+    }
+
+    // Essentially null ?
+    return (KeyCode) {0};
+}
