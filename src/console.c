@@ -2,7 +2,14 @@
 #include <assert.h>
 
 Console console = {
-    .lastWrittenCharacters = 0
+    .state = {
+        .Output = {
+            .lastWrittenCharsCount = 0
+        },
+        .Input = {
+            .lastReadCharsCount = 0
+        }
+    }
 };
 
 inline int write_text(char *buffer, COORD coords);
@@ -31,13 +38,41 @@ int initializeConsole() {
         return 1;
     }
 
+    console.state.Size.width = console.Windows.csbi.dwSize.X;
+    console.state.Size.height = console.Windows.csbi.dwSize.Y;
+
+    // Get input buffer
+    console.hInput = GetStdHandle(STD_INPUT_HANDLE);
+
+    if (console.hInput == INVALID_HANDLE_VALUE) {
+        return 1;
+    }
+
+    DWORD mode;
+    GetConsoleMode(console.hInput, &mode);
+
+    // disables Enter to get new data, and adding character to screen after writing it
+    mode |= ENABLE_WINDOW_INPUT;
+    mode &= ~(ENABLE_LINE_INPUT | ENABLE_ECHO_INPUT);
+
+    SetConsoleMode(console.hInput, mode);
+
     return 0;
 }
 
 int killConsole() {
     SetConsoleActiveScreenBuffer(console.hMainConsole);
     CloseHandle(console.windowsConsoleHandle);
+    CloseHandle(console.hMainConsole);
+    CloseHandle(console.hInput);
 
+    return 0;
+}
+
+int renderScreen(COORD size) {
+    console.state.Size.width = size.X;
+    console.state.Size.height = size.Y;
+    // do other stuff
     return 0;
 }
 
@@ -60,6 +95,22 @@ inline int write_text(char *buffer, COORD coords) {
         buffer,
         strlen(buffer),
         coords,
-        &console.lastWrittenCharacters
+        &console.state.Output.lastWrittenCharsCount
+    );
+}
+
+int writeWindowsBuffer(CHAR_INFO *buffer, COORD where) {
+    SMALL_RECT size = {
+        where.X, where.Y,
+        where.X + console.state.Size.width - 1,
+        where.Y + console.state.Size.height - 1,
+    };
+
+    return WriteConsoleOutput(
+        console.windowsConsoleHandle,
+        buffer,
+        (COORD) {console.state.Size.width, console.state.Size.height},
+        where,
+        &size
     );
 }
