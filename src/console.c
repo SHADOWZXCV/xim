@@ -31,7 +31,7 @@ int initializeConsole() {
 
     SetConsoleActiveScreenBuffer(hAlt);
 
-    console.hMainConsole = hConsole;
+    console.hOldConsole = hConsole;
     console.windowsConsoleHandle = hAlt;
     
     if (!GetConsoleScreenBufferInfo(hAlt, &console.Windows.csbi)) {
@@ -61,15 +61,15 @@ int initializeConsole() {
 }
 
 int killConsole() {
-    SetConsoleActiveScreenBuffer(console.hMainConsole);
+    SetConsoleActiveScreenBuffer(console.hOldConsole);
     CloseHandle(console.windowsConsoleHandle);
-    CloseHandle(console.hMainConsole);
+    CloseHandle(console.hOldConsole);
     CloseHandle(console.hInput);
 
     return 0;
 }
 
-int renderScreen(COORD size) {
+int rerenderScreen(COORD size) {
     console.state.Size.width = size.X;
     console.state.Size.height = size.Y;
     // do other stuff
@@ -113,4 +113,14 @@ int writeWindowsBuffer(CHAR_INFO *buffer, COORD where, COORD size) {
         (COORD) {0,0},
         &rect
     );
+}
+
+int setCursorPosition(Vector2d start, int next) {
+    int x = start.x + next;
+    COORD position = {
+        .X = x % console.state.Size.width,
+        .Y = start.y + (x / console.state.Size.width)
+    };
+
+    return SetConsoleCursorPosition(console.windowsConsoleHandle, position);
 }

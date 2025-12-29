@@ -1,6 +1,7 @@
 #ifndef CONSOLE_H_
 #define CONSOLE_H_
 #include <Windows.h>
+#include "types.h"
 
 enum WriteType {
     TEXT = 0,
@@ -12,7 +13,7 @@ typedef struct {
     // hMainConsole:
     // This is the main console, after the program is done, we go back to it.
     // That's its only use.
-    HANDLE hMainConsole;
+    HANDLE hOldConsole;
     HANDLE hInput;
     HANDLE windowsConsoleHandle;
     struct {
@@ -44,5 +45,7 @@ int initializeConsole();
 int write(enum WriteType type, void *value, COORD where);
 int killConsole();
 int writeWindowsBuffer(CHAR_INFO *buffer, COORD where, COORD size);
-int renderScreen();
+int rerenderScreen();
+int setCursorPosition(Vector2d start, int next);
+
 #endif

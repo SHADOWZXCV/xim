@@ -17,6 +17,8 @@ int initVirtualBuffer(Console console) {
     Xim.commandBuffer.dirty = 0;
     Xim.commandBuffer.cursor = 0;
 
+    Xim.command_started = 0;
+
     size_t bufferSize = sizeof(*(Xim.editorBuffer.cells)) * Xim.editorBuffer.size.width * Xim.editorBuffer.size.height;
     Xim.editorBuffer.cells = malloc(bufferSize);
     
@@ -51,15 +53,21 @@ int killVirtualBuffer() {
     return 0;
 }
 
-int addToBuffer(char character) {
+int addToBuffer(enum XIM_BUFFER_TYPES type, char character) {
     Buffer *buffer;
 
-    if (Xim.mode == COMMAND_MODE) {
-        buffer = &Xim.commandBuffer;
-    } else if (Xim.mode == RAW_MODE) {
-        buffer = &Xim.editorBuffer;
-    } else {
-        return 1;
+    switch (type) {
+        case COMMAND_BUFFER: {
+            buffer = &Xim.commandBuffer;
+        } break;
+
+        case EDITOR_BUFFER: {
+            buffer = &Xim.editorBuffer;
+        } break;
+
+        default: 
+            assert(0 && "THIS TYPE OF BUFFER DOES NOT EXIST");
+        break;
     }
 
     buffer->cells[buffer->cursor].Char.AsciiChar = character;
@@ -70,6 +78,41 @@ int addToBuffer(char character) {
     }
 
     buffer->dirty = 1;
+
+    return 0;
+}
+
+int addToCurrentBuffer(char character) {
+    Buffer *buffer;
+
+    if (Xim.mode == COMMAND_MODE) {
+        buffer = &Xim.commandBuffer;
+    } else if (Xim.mode == RAW_MODE) {
+        buffer = &Xim.editorBuffer;
+    } else {
+        return 1;
+    }
+
+    if (character == ':' && !Xim.command_started && Xim.mode == COMMAND_MODE) {
+        buffer->cursor = 1;
+        Xim.command_started = 1; // get it to 0 if the command is processed or the escape button is pressed
+    }
+
+    if (Xim.mode == COMMAND_MODE) {
+        if (!Xim.command_started) {
+            return 0; // ignore the character
+        }
+    }
+
+    buffer->cells[buffer->cursor].Char.AsciiChar = character;
+    buffer->cells[buffer->cursor].Attributes |= FOREGROUND_RED | FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_INTENSITY;
+    buffer->dirty = 1;
+
+    if (buffer->cursor < buffer->size.width * buffer->size.height) {
+        buffer->cursor++;
+    }
+
+    setCursorPosition(buffer->startLoc, buffer->cursor);
 
     return 0;
 }
