@@ -43,6 +43,6 @@ extern Console console;
 int initializeConsole();
 int write(enum WriteType type, void *value, COORD where);
 int killConsole();
-int writeWindowsBuffer(CHAR_INFO *buffer, COORD where);
+int writeWindowsBuffer(CHAR_INFO *buffer, COORD where, COORD size);
 int renderScreen();
 #endif

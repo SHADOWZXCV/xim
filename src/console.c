@@ -99,18 +99,18 @@ inline int write_text(char *buffer, COORD coords) {
     );
 }
 
-int writeWindowsBuffer(CHAR_INFO *buffer, COORD where) {
-    SMALL_RECT size = {
+int writeWindowsBuffer(CHAR_INFO *buffer, COORD where, COORD size) {
+    SMALL_RECT rect = {
         where.X, where.Y,
-        where.X + console.state.Size.width - 1,
-        where.Y + console.state.Size.height - 1,
+        where.X + size.X,
+        where.Y + size.Y,
     };
 
     return WriteConsoleOutput(
         console.windowsConsoleHandle,
         buffer,
-        (COORD) {console.state.Size.width, console.state.Size.height},
-        where,
-        &size
+        size,
+        (COORD) {0,0},
+        &rect
     );
 }
