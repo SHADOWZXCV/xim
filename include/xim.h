@@ -12,7 +12,8 @@ enum XIM_MODES {
 };
 
 enum XIM_BUFFER_TYPES {
-    COMMAND_BUFFER = 0,
+    CURRENT = 0,
+    COMMAND_BUFFER,
     EDITOR_BUFFER
 };
 
@@ -46,8 +47,7 @@ struct {
 int initVirtualBuffer();
 int killVirtualBuffer();
 int renderVirtualBuffer(unsigned short flush);
-int addToBuffer(enum XIM_BUFFER_TYPES type, char character);
-int addToCurrentBuffer(char character);
+int addBufferToBuffer(enum XIM_BUFFER_TYPES type, char *text, int at, unsigned short relocate_cursor);
 int recalculateScreenBuffers();
 
 #endif

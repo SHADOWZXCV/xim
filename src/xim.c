@@ -71,46 +71,32 @@ int killVirtualBuffer() {
     return 0;
 }
 
-int addToBuffer(enum XIM_BUFFER_TYPES type, char character) {
-    Buffer *buffer;
-
-    switch (type) {
-        case COMMAND_BUFFER: {
-            buffer = &Xim.commandBuffer;
-        } break;
-
-        case EDITOR_BUFFER: {
-            buffer = &Xim.editorBuffer;
-        } break;
-
-        default: 
-            assert(0 && "THIS TYPE OF BUFFER DOES NOT EXIST");
-        break;
-    }
-
-    if (buffer->cursor < buffer->size.width * buffer->size.height) {
-        buffer->cells[buffer->cursor].Char.AsciiChar = character;
-        buffer->cells[buffer->cursor].Attributes |= FOREGROUND_RED | FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_INTENSITY;
-
-        buffer->cursor += 1;
-        buffer->dirty = 1;
-    }
-
-    return 0;
-}
-
-int addBufferToBuffer(enum XIM_BUFFER_TYPES type, char *text, int at) {
+int addBufferToBuffer(enum XIM_BUFFER_TYPES type, char *text, int at, unsigned short relocate_cursor) {
     char character = '\0';
 
     Buffer *buffer;
+    Area *area;
 
     switch (type) {
+        case CURRENT: {
+            if (Xim.mode == COMMAND_MODE) {
+                buffer = &Xim.commandBuffer;
+                area = &Xim.commandArea;
+            } else if (Xim.mode == RAW_MODE) {
+                buffer = &Xim.editorBuffer;
+                area = &Xim.editorArea;
+            } else {
+                return 1;
+            }
+        } break;
         case COMMAND_BUFFER: {
             buffer = &Xim.commandBuffer;
+            area = &Xim.commandArea;
         } break;
 
         case EDITOR_BUFFER: {
             buffer = &Xim.editorBuffer;
+            area = &Xim.editorArea;
         } break;
 
         default: 
@@ -118,56 +104,37 @@ int addBufferToBuffer(enum XIM_BUFFER_TYPES type, char *text, int at) {
         break;
     }
 
-    buffer->cursor = at;
+    // Negative values mean text will be placed at the current last char
+    //  of the buffer
+    if (at >= 0) {
+        buffer->cursor = at;
+    }
+
+    int buffer_size = buffer->size.width * buffer->size.height;
+
+    if (at >= buffer_size) {
+        return 1; // can't write after the buffer's size
+    }
+
+    int start = buffer->cursor;
 
     while (character = *text++) {
-        if (buffer->cursor < buffer->size.width * buffer->size.height) {
-            buffer->cells[buffer->cursor].Char.AsciiChar = character;
-            buffer->cells[buffer->cursor].Attributes |= FOREGROUND_RED | FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_INTENSITY;
-            buffer->cursor++;
-        } else { 
-            break;
+        if (buffer->cursor >= buffer_size) {
+            break; // max buffer size
         }
-    }
 
-    if (at != buffer->cursor) {
-        buffer->dirty = 1;
-    }
-
-    return 0;
-}
-
-int addToCurrentBuffer(char character) {
-    Buffer *buffer;
-    Area *area;
-
-    if (Xim.mode == COMMAND_MODE) {
-        buffer = &Xim.commandBuffer;
-        area = &Xim.commandArea;
-    } else if (Xim.mode == RAW_MODE) {
-        buffer = &Xim.editorBuffer;
-        area = &Xim.editorArea;
-    } else {
-        return 1;
-    }
-
-    if (character == ':' && !Xim.command_started && Xim.mode == COMMAND_MODE) {
-        Xim.command_started = 1; // get it to 0 if the command is processed or the escape button is pressed
-    }
-
-    if (Xim.mode == COMMAND_MODE) {
-        if (!Xim.command_started) {
-            return 0; // ignore the character
-        }
-    }
-    if (buffer->cursor < buffer->size.width * buffer->size.height) {
         buffer->cells[buffer->cursor].Char.AsciiChar = character;
         buffer->cells[buffer->cursor].Attributes |= FOREGROUND_RED | FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_INTENSITY;
-        buffer->dirty = 1;
         buffer->cursor++;
     }
 
-    setCursorPosition(area->startLoc, buffer->cursor);
+    if (buffer->cursor != start) {
+        buffer->dirty = 1;
+    }
+
+    if (relocate_cursor) {
+        setCursorPosition(area->startLoc, buffer->cursor);
+    }
 
     return 0;
 }
@@ -259,15 +226,25 @@ int initializeXim() {
             // enable command mode if it wasn't already
             //! TODO: These keys have multiple purposes inside raw mode, implement them you lazy fossil
         } else if (Xim.mode == COMMAND_MODE && !Xim.command_started &&
-               (key.character == 's' || key.character == 'S' ||
-                key.character == 'i' || key.character == 'I' ||
+               (key.character == 'i' || key.character == 'I' ||
+               key.character == 's' || key.character == 'S' ||
                 key.character == 'o' || key.character == 'O' ||
                 key.character == 'a' || key.character == 'A')) {
             // enable insert mode if it wasn't, otherwise just type the character to the screen
-            addBufferToBuffer(COMMAND_BUFFER, "-- INSERT --", 0);
+            addBufferToBuffer(COMMAND_BUFFER, "-- INSERT --", 0, 0);
             Xim.mode = RAW_MODE;
         } else if (key.character) {
-            addToCurrentBuffer((char) key.character);
+            if (Xim.mode == COMMAND_MODE) {
+                if (key.character == ':' && !Xim.command_started) {
+                    Xim.command_started = 1; // get it to 0 if the command is processed or the escape button is pressed
+                }
+
+                if (!Xim.command_started) {
+                    continue;  // ignore the character
+                }
+            }
+
+            addBufferToBuffer(CURRENT, (char[2]) {(char) key.character}, -1, 1);
         }
 
         renderVirtualBuffer(0);
