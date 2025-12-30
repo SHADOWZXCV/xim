@@ -6,7 +6,9 @@
 int main(int argc, char **argv) {
     initializeConsole();
     initVirtualBuffer();
+
     initializeXim();
+
     killVirtualBuffer();
     killConsole();
 

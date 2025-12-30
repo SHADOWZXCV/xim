@@ -7,6 +7,11 @@ typedef struct {
 } Vector2d;
 
 typedef struct {
+    unsigned short width;
+    unsigned short height;
+} Size2s;
+
+typedef struct {
   unsigned short keyCode;
   unsigned short character;  
 } KeyCode;

@@ -1,4 +1,5 @@
 #include "console.h"
+#include "xim.h"
 #include <assert.h>
 
 Console console = {
@@ -33,13 +34,6 @@ int initializeConsole() {
 
     console.hOldConsole = hConsole;
     console.windowsConsoleHandle = hAlt;
-    
-    if (!GetConsoleScreenBufferInfo(hAlt, &console.Windows.csbi)) {
-        return 1;
-    }
-
-    console.state.Size.width = console.Windows.csbi.dwSize.X;
-    console.state.Size.height = console.Windows.csbi.dwSize.Y;
 
     // Get input buffer
     console.hInput = GetStdHandle(STD_INPUT_HANDLE);
@@ -56,6 +50,14 @@ int initializeConsole() {
     mode &= ~(ENABLE_LINE_INPUT | ENABLE_ECHO_INPUT);
 
     SetConsoleMode(console.hInput, mode);
+    // SetConsoleCtrlHandler(NULL, 1);
+
+    if (!GetConsoleScreenBufferInfo(hAlt, &console.Windows.csbi)) {
+        return 1;
+    }
+
+    console.state.Size.width = console.Windows.csbi.srWindow.Right - console.Windows.csbi.srWindow.Left + 1;
+    console.state.Size.height = console.Windows.csbi.srWindow.Bottom - console.Windows.csbi.srWindow.Top + 1;
 
     return 0;
 }
@@ -66,13 +68,30 @@ int killConsole() {
     CloseHandle(console.hOldConsole);
     CloseHandle(console.hInput);
 
+    // SetConsoleCtrlHandler(NULL, 0);
+
     return 0;
 }
 
-int rerenderScreen(COORD size) {
-    console.state.Size.width = size.X;
-    console.state.Size.height = size.Y;
+int rerenderScreen() {
+    if (!GetConsoleScreenBufferInfo(console.windowsConsoleHandle, &console.Windows.csbi)) {
+        return 1;
+    }
+
+    console.state.Size.width = console.Windows.csbi.srWindow.Right - console.Windows.csbi.srWindow.Left + 1;
+    console.state.Size.height = console.Windows.csbi.srWindow.Bottom - console.Windows.csbi.srWindow.Top + 1;
     // do other stuff
+
+    recalculateScreenBuffers();
+    renderVirtualBuffer(1);
+
+    // Relocate cursor after resize and
+    if (Xim.mode == COMMAND_MODE && Xim.command_started) {
+        setCursorPosition(Xim.commandArea.startLoc, Xim.commandBuffer.cursor);
+    } else {
+        setCursorPosition(Xim.editorArea.startLoc, Xim.editorBuffer.cursor);
+    }
+
     return 0;
 }
 
@@ -102,17 +121,23 @@ inline int write_text(char *buffer, COORD coords) {
 int writeWindowsBuffer(CHAR_INFO *buffer, COORD where, COORD size) {
     SMALL_RECT rect = {
         where.X, where.Y,
-        where.X + size.X,
-        where.Y + size.Y,
+        where.X + size.X - 1,
+        where.Y + size.Y - 1,
     };
 
-    return WriteConsoleOutput(
+    BOOL x = WriteConsoleOutput(
         console.windowsConsoleHandle,
         buffer,
         size,
         (COORD) {0,0},
         &rect
     );
+
+    if (!x) {
+        abort(); // for now
+    }
+
+    return 0;
 }
 
 int setCursorPosition(Vector2d start, int next) {
@@ -132,7 +157,7 @@ KeyCode pollInputFromConsole() {
     ReadConsoleInput(console.hInput, &record, 1, &console.state.Input.lastReadCharsCount);
 
     if (record.EventType == WINDOW_BUFFER_SIZE_EVENT) {
-        rerenderScreen(record.Event.WindowBufferSizeEvent.dwSize);
+        rerenderScreen();
     }
 
      if (record.EventType == KEY_EVENT && record.Event.KeyEvent.bKeyDown) {

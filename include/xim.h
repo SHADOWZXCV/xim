@@ -23,30 +23,31 @@ enum SIGNALS {
 
 typedef struct {
     CHAR_INFO *cells;
-
-    struct {
-        int width;
-        int height;
-    } size;
-
-    Vector2d startLoc;
-
+    Size2s size;
     int cursor;
     short dirty;
 } Buffer;
+
+typedef struct {
+    Vector2d startLoc;
+    Size2s size;
+} Area;
 
 struct {
     enum XIM_MODES mode; // default: command mode
     short command_started;
     Buffer editorBuffer;
     Buffer commandBuffer;
+    Area editorArea;
+    Area commandArea;
     enum SIGNALS signal;
 } Xim;
 
 int initVirtualBuffer();
 int killVirtualBuffer();
-int renderVirtualBuffer();
+int renderVirtualBuffer(unsigned short flush);
 int addToBuffer(enum XIM_BUFFER_TYPES type, char character);
 int addToCurrentBuffer(char character);
+int recalculateScreenBuffers();
 
 #endif
