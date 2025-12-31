@@ -86,7 +86,7 @@ int rerenderScreen() {
     renderVirtualBuffer(1);
 
     // Relocate cursor after resize and
-    if (Xim.mode == COMMAND_MODE && Xim.command_started) {
+    if (Xim.mode == COMMAND_MODE) {
         setCursorPosition(Xim.commandArea.startLoc, Xim.commandBuffer.cursor);
     } else {
         setCursorPosition(Xim.editorArea.startLoc, Xim.editorBuffer.cursor);

@@ -3,10 +3,13 @@
 #include <Windows.h>
 #include <assert.h>
 #include "console.h"
+#include "util/vector.h"
+#include "commands.h"
 #include "types.h"
 
 enum XIM_MODES {
-    RAW_MODE = 0,
+    NO_MODE = 0,
+    RAW_MODE,
     SELECTION_MODE,
     COMMAND_MODE
 };
@@ -18,8 +21,8 @@ enum XIM_BUFFER_TYPES {
 };
 
 enum SIGNALS {
-    EXIT_SIGNAL = 0,
-    NOP_SIGNAL = 1,
+    EXIT_SIGNAL = 99,
+    NOP_SIGNAL = 0,
 };
 
 typedef struct {
@@ -36,13 +39,17 @@ typedef struct {
 
 struct {
     enum XIM_MODES mode; // default: command mode
-    short command_started;
     Buffer editorBuffer;
     Buffer commandBuffer;
+    Vector *writtenCommand;
     Area editorArea;
     Area commandArea;
     enum SIGNALS signal;
 } Xim;
+
+struct {
+    void(*handler)();
+} WindowsKeyPresses [];
 
 int initVirtualBuffer();
 int killVirtualBuffer();

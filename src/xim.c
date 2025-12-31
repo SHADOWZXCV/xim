@@ -1,7 +1,6 @@
 #include "xim.h"
 
 int resetCommandBuffer() {
-    Xim.command_started = 0;
     Xim.commandBuffer.cursor = 0;
 
     for (size_t i = 0; i < (size_t) (Xim.commandBuffer.size.width * Xim.commandBuffer.size.height); i++) {
@@ -14,19 +13,17 @@ int resetCommandBuffer() {
 }
 
 int initVirtualBuffer() {
-    Xim.mode = COMMAND_MODE;
+    Xim.mode = NO_MODE;
     Xim.signal = NOP_SIGNAL;
 
-    //! TODO: Change these later
+    //! TODO: Change these later, make them work with dynamic arrays or something
     Xim.editorBuffer.size.width = 500;
     Xim.editorBuffer.size.height = 1000;
     Xim.commandBuffer.size.width = 500;
-    Xim.commandBuffer.size.height = 1;
+    Xim.commandBuffer.size.height = 1000;
 
     Xim.editorBuffer.cursor = 0;
     Xim.commandBuffer.cursor = 0;
-
-    Xim.command_started = 0;
 
     size_t bufferSize =  Xim.editorBuffer.size.width * Xim.editorBuffer.size.height;
     Xim.editorBuffer.cells = calloc(bufferSize, sizeof(*(Xim.editorBuffer.cells)));
@@ -40,6 +37,8 @@ int initVirtualBuffer() {
 
         return 1;
     }
+
+    Xim.writtenCommand = initialize_vector("char");
 
     recalculateScreenBuffers();
     renderVirtualBuffer(1);
@@ -67,6 +66,7 @@ int recalculateScreenBuffers() {
 int killVirtualBuffer() {
     free(Xim.editorBuffer.cells);
     free(Xim.commandBuffer.cells);
+    kill_vector(Xim.writtenCommand);
 
     return 0;
 }
@@ -222,29 +222,46 @@ int initializeXim() {
         if (key.keyCode == VK_ESCAPE) {
             resetCommandBuffer();
             setCursorPosition(Xim.editorArea.startLoc, Xim.editorBuffer.cursor);
-            Xim.mode = COMMAND_MODE;
-            // enable command mode if it wasn't already
-            //! TODO: These keys have multiple purposes inside raw mode, implement them you lazy fossil
-        } else if (Xim.mode == COMMAND_MODE && !Xim.command_started &&
-               (key.character == 'i' || key.character == 'I' ||
-               key.character == 's' || key.character == 'S' ||
-                key.character == 'o' || key.character == 'O' ||
-                key.character == 'a' || key.character == 'A')) {
-            // enable insert mode if it wasn't, otherwise just type the character to the screen
-            addBufferToBuffer(COMMAND_BUFFER, "-- INSERT --", 0, 0);
-            Xim.mode = RAW_MODE;
-        } else if (key.character) {
-            if (Xim.mode == COMMAND_MODE) {
-                if (key.character == ':' && !Xim.command_started) {
-                    Xim.command_started = 1; // get it to 0 if the command is processed or the escape button is pressed
+            Xim.mode = NO_MODE;
+        }
+
+        if (Xim.mode == COMMAND_MODE) {
+            if (key.keyCode == VK_RETURN) {
+                enum SIGNALS result = parseCommandFromBuffer(Xim.writtenCommand);
+
+                if (result == EXIT_SIGNAL) {
+                    Xim.signal = EXIT_SIGNAL;
                 }
 
-                if (!Xim.command_started) {
-                    continue;  // ignore the character
+                vec_clear(Xim.writtenCommand);
+                resetCommandBuffer();
+                setCursorPosition(Xim.editorArea.startLoc, Xim.editorBuffer.cursor);
+                Xim.mode = NO_MODE;
+            }
+        }
+
+        if (Xim.mode == NO_MODE) {
+            //! TODO: These keys have multiple purposes inside raw mode, implement them you lazy fossil
+             if (key.character == 'i' || key.character == 'I' ||
+                 key.character == 's' || key.character == 'S' ||
+                 key.character == 'o' || key.character == 'O' ||
+                 key.character == 'a' || key.character == 'A') {
+                // enable insert mode if it wasn't, otherwise just type the character to the screen
+                addBufferToBuffer(COMMAND_BUFFER, "-- INSERT --", 0, 0);
+                Xim.mode = RAW_MODE;
+            } else if (key.character == ':') {
+                Xim.mode = COMMAND_MODE;
+                addBufferToBuffer(CURRENT, ":", -1, 1);
+            }
+        } else {
+            if (key.character) {
+                addBufferToBuffer(CURRENT, (char[2]) {(char) key.character}, -1, 1);
+
+                if (Xim.mode == COMMAND_MODE) {
+                    char ch = (char) key.character;
+                    vec_push_back(Xim.writtenCommand, &ch);
                 }
             }
-
-            addBufferToBuffer(CURRENT, (char[2]) {(char) key.character}, -1, 1);
         }
 
         renderVirtualBuffer(0);
