@@ -79,7 +79,7 @@ int addBufferToBuffer(enum XIM_BUFFER_TYPES type, char *text, int at, unsigned s
 
     switch (type) {
         case CURRENT: {
-            if (Xim.mode == COMMAND_MODE) {
+            if (Xim.mode == EX_MODE) {
                 buffer = &Xim.commandBuffer;
                 area = &Xim.commandArea;
             } else if (Xim.mode == RAW_MODE) {
@@ -225,7 +225,7 @@ int initializeXim() {
             Xim.mode = NO_MODE;
         }
 
-        if (Xim.mode == COMMAND_MODE) {
+        if (Xim.mode == EX_MODE) {
             if (key.keyCode == VK_RETURN) {
                 enum SIGNALS result = parseCommandFromBuffer(Xim.writtenCommand);
 
@@ -250,14 +250,14 @@ int initializeXim() {
                 addBufferToBuffer(COMMAND_BUFFER, "-- INSERT --", 0, 0);
                 Xim.mode = RAW_MODE;
             } else if (key.character == ':') {
-                Xim.mode = COMMAND_MODE;
+                Xim.mode = EX_MODE;
                 addBufferToBuffer(CURRENT, ":", -1, 1);
             }
         } else {
             if (key.character) {
                 addBufferToBuffer(CURRENT, (char[2]) {(char) key.character}, -1, 1);
 
-                if (Xim.mode == COMMAND_MODE) {
+                if (Xim.mode == EX_MODE) {
                     char ch = (char) key.character;
                     vec_push_back(Xim.writtenCommand, &ch);
                 }

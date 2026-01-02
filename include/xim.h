@@ -11,7 +11,8 @@ enum XIM_MODES {
     NO_MODE = 0,
     RAW_MODE,
     SELECTION_MODE,
-    COMMAND_MODE
+    OPERATOR_MODE,
+    EX_MODE
 };
 
 enum XIM_BUFFER_TYPES {

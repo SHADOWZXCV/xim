@@ -86,7 +86,7 @@ int rerenderScreen() {
     renderVirtualBuffer(1);
 
     // Relocate cursor after resize and
-    if (Xim.mode == COMMAND_MODE) {
+    if (Xim.mode == EX_MODE) {
         setCursorPosition(Xim.commandArea.startLoc, Xim.commandBuffer.cursor);
     } else {
         setCursorPosition(Xim.editorArea.startLoc, Xim.editorBuffer.cursor);
@@ -134,7 +134,7 @@ int writeWindowsBuffer(CHAR_INFO *buffer, COORD where, COORD size) {
     );
 
     if (!x) {
-        abort(); // for now
+        assert(0 && "Failed to write to console!"); // for now
     }
 
     return 0;
