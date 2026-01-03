@@ -190,6 +190,76 @@ void *remove_by_value_binary_tree(BinaryTree *tree, void *value) {
     }
 }
 
+void right_rotate_subtree_tree(BinaryTree *tree, BinaryTreeNode *x) {
+    if (x == NULL || tree == NULL) {
+        return;
+    }
+
+    if (x->left == NULL) {
+        return;
+    }
+
+    BinaryTreeNode *swapped_child = x->left->right; // could be null
+    BinaryTreeNode *grand_parent = x->parent;
+    BinaryTreeNode *left = x->left;
+
+    x->left->parent = x->parent;
+    x->left->right = x;
+    x->parent = x->left;
+    x->left = swapped_child;
+
+    if (swapped_child != NULL) {
+        swapped_child->parent = x;
+    }
+
+    // after rotation
+    if (grand_parent == NULL) {
+        tree->root = x->parent;
+        return;
+    }
+
+    if (grand_parent->left == x) {
+        grand_parent->left = left;
+    } else if (grand_parent->right == x) {
+        grand_parent->right = left;
+    }
+}
+
+void left_rotate_subtree_tree(BinaryTree *tree, BinaryTreeNode *x) {
+    if (x == NULL || tree == NULL) {
+        return;
+    }
+
+    if (x->right == NULL) {
+        return;
+    }
+
+    BinaryTreeNode *swapped_child = x->right->left; // could be null
+    BinaryTreeNode *grand_parent = x->parent;
+    BinaryTreeNode *right = x->right;
+
+    x->right->parent = x->parent;
+    x->right->left = x;
+    x->parent = x->right;
+    x->right = swapped_child;
+
+    if (swapped_child != NULL) {
+        swapped_child->parent = x;
+    }
+
+    // after rotation
+    if (grand_parent == NULL) {
+        tree->root = x->parent;
+        return;
+    }
+
+    if (grand_parent->left == x) {
+        grand_parent->left = right;
+    } else if (grand_parent->right == x) {
+        grand_parent->right = right;
+    }
+}
+
 BinaryTreeNodeDirection find_node_for_insertion(BinaryTree *tree, BinaryTreeNode *currentNode, void *value) {
     if (tree == NULL || currentNode == NULL) {
         return (BinaryTreeNodeDirection) {.node = NULL, .direction = BINARY_TREE_NODE_NONE }; // Bad current node
