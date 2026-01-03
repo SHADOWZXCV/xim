@@ -3,7 +3,7 @@
 #include <Windows.h>
 #include <assert.h>
 #include "console.h"
-#include "util/vector.h"
+#include "structures/vector.h"
 #include "commands.h"
 #include "types.h"
 

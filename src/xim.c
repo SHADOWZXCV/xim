@@ -38,7 +38,7 @@ int initVirtualBuffer() {
         return 1;
     }
 
-    Xim.writtenCommand = initialize_vector("char");
+    Xim.writtenCommand = initialize_vector("char", sizeof(char));
 
     recalculateScreenBuffers();
     renderVirtualBuffer(1);
@@ -66,7 +66,7 @@ int recalculateScreenBuffers() {
 int killVirtualBuffer() {
     free(Xim.editorBuffer.cells);
     free(Xim.commandBuffer.cells);
-    kill_vector(Xim.writtenCommand);
+    free_vector(Xim.writtenCommand);
 
     return 0;
 }

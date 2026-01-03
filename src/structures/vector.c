@@ -1,15 +1,19 @@
-#include "util/vector.h"
+#include "structures/vector.h"
 
-Vector *initialize_vector(char *type) {
+Vector *initialize_vector(char *type, size_t type_size) {
     Vector *vector = malloc(sizeof(*vector));
 
+    vector->base = malloc(type_size * VECTOR_BASE_SIZE);
+    vector->type_size = type_size;
+
     if (!strcmp(type, "char")) {
-        vector->base = malloc(sizeof(char) * VECTOR_BASE_SIZE);
-        vector->type_size = sizeof(char);
-    } else {
-        kill_vector(vector); // dk why, but don't care
-        assert(0 && "CANNOT INITIALIZE A VECTOR WITH THAT TYPE!");
+        vector->type = TYPE_CHAR;
     }
+    //! TODO: Ignore for now!
+    //  else {
+    //     kill_vector(vector); // dk why, but don't care
+    //     assert(0 && "CANNOT INITIALIZE A VECTOR WITH THAT TYPE!");
+    // }
 
     vector->len = 0;
     vector->size = 2;
@@ -26,7 +30,7 @@ void vec_push_back(Vector *vector, void *element) {
             assert(0 && "vector realloc failed");
     }
 
-    if (vector->type_size == sizeof(char) && vector->len > 0) {
+    if (vector->type == TYPE_CHAR && vector->len > 0) {
         // Go back one step to override the last null terminator
         vector->len--;
     }
@@ -34,7 +38,7 @@ void vec_push_back(Vector *vector, void *element) {
     memcpy((char *)vector->base + vector->len * vector->type_size, element, vector->type_size);
     vector->len++;
 
-    if (vector->type_size == sizeof(char)) {
+    if (vector->type == TYPE_CHAR) {
         // always append a null-terminated at the end
         char zero = '\0';
         memcpy((char *)vector->base + vector->len * vector->type_size, &zero, vector->type_size);
@@ -47,14 +51,14 @@ void vec_clear(Vector *vector) {
 
     vector->len = 0;
 
-    if (vector->type_size == sizeof(char)) {
+    if (vector->type == TYPE_CHAR) {
         char ch = '\0';
 
         memcpy((char *)vector->base, &ch, vector->type_size);
     }
 }
 
-void kill_vector(Vector *vector) {
+void free_vector(Vector *vector) {
     if (!vector) return;
 
     free(vector->base);
