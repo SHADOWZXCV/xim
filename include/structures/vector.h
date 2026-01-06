@@ -6,6 +6,7 @@
 #include <memory.h>
 #include <assert.h>
 #include "types.h"
+#define VECTOR_AT(TYPE, PIECE, X) ((TYPE *)((char *)(PIECE)->lineStartsOffsets->base + ((X) * (PIECE)->lineStartsOffsets->type_size)))
 
 typedef struct {
     void *base; // any type
